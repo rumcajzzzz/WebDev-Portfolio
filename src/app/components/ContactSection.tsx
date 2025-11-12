@@ -1,9 +1,8 @@
-import { FaGithub, FaLinkedin, FaEnvelope } from 'react-icons/fa';
+import { FaGithub, FaEnvelope } from 'react-icons/fa';
 
 export default function ContactSection() {
   const socialLinks = [
     { href: 'https://github.com/rumcajzzzz', icon: <FaGithub /> },
-    // { href: 'https://www.linkedin.com/in/marcel-niemiec-a2a90b336/', icon: <FaLinkedin /> },
     { href: 'mailto:rumcajzdev@gmail.com', icon: <FaEnvelope /> },
   ];
 
@@ -12,7 +11,6 @@ export default function ContactSection() {
       id="contact"
       className="relative py-24 px-6 w-full h-[100vh] flex flex-col items-center justify-center text-center fade-in-on-scroll"
     >
-      {/* Tło z lekkim rozmyciem na górze i dole */}
       <div
         className="absolute inset-0 -z-10 pointer-events-none"
         style={{
@@ -35,12 +33,6 @@ export default function ContactSection() {
         Napisz wiadomość @
       </a>
 
-      {/* Numer telefonu */}
-      {/* <p className="text-neutral-500 text-sm mb-8 fade-in-on-scroll-soft">
-        <a href="tel:+48606294349" className="underline hover:text-white">lub zadzwoń!</a>
-      </p> */}
-
-
       {/* Ikony sociali */}
       <div className="flex gap-6 text-2xl text-white z-9999">
         {socialLinks.map((social, index) => (
@@ -50,13 +42,12 @@ export default function ContactSection() {
             target="_blank"
             rel="noopener noreferrer"
             className="fade-in-on-scroll-soft social-icon z-9999"
-
-
           >
             {social.icon}
           </a>
         ))}
       </div>
+      
     </section>
   );
 }
