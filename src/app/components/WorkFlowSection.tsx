@@ -74,13 +74,9 @@ export default function WorkFlowSection() {
         if (newIndex !== stepIndex && canChangeStepRef.current) {
           canChangeStepRef.current = false;
           setStepIndex(newIndex);
-
-          // jeśli osiągnięto ostatni krok, ustawiamy completed
           if (newIndex === totalSteps - 1) {
             setIsCompleted(true);
           }
-
-          // blokada scrolla tylko jeśli animacja nie jest ukończona
           if (!isCompleted) {
             setIsScrollBlocked(true);
             setTimeout(() => {
@@ -88,7 +84,6 @@ export default function WorkFlowSection() {
               canChangeStepRef.current = true;
             }, 1200);
           } else {
-            // od razu odblokowujemy, jeśli completed
             canChangeStepRef.current = true;
           }
         }

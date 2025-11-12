@@ -3,7 +3,7 @@ import { FaGithub, FaLinkedin, FaEnvelope } from 'react-icons/fa';
 export default function ContactSection() {
   const socialLinks = [
     { href: 'https://github.com/rumcajzzzz', icon: <FaGithub /> },
-    { href: 'https://www.linkedin.com/in/marcel-niemiec-a2a90b336/', icon: <FaLinkedin /> },
+    // { href: 'https://www.linkedin.com/in/marcel-niemiec-a2a90b336/', icon: <FaLinkedin /> },
     { href: 'mailto:rumcajzdev@gmail.com', icon: <FaEnvelope /> },
   ];
 
@@ -36,9 +36,9 @@ export default function ContactSection() {
       </a>
 
       {/* Numer telefonu */}
-      <p className="text-neutral-500 text-sm mb-8 fade-in-on-scroll-soft">
+      {/* <p className="text-neutral-500 text-sm mb-8 fade-in-on-scroll-soft">
         <a href="tel:+48606294349" className="underline hover:text-white">lub zadzwoń!</a>
-      </p>
+      </p> */}
 
 
       {/* Ikony sociali */}
