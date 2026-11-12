@@ -7,8 +7,9 @@ const description =
   "Tworzę nowoczesne, szybkie i responsywne strony internetowe dla firm i osób prywatnych. Projekt UX/UI, optymalizacja i pomoc przy publikacji.";
 
 export const metadata: Metadata = {
-  // Absolute base for OG image URLs; set NEXT_PUBLIC_SITE_URL to the production domain.
-  metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000"),
+  // Absolute base for OG image URLs. Netlify sets URL to the site's main (custom) domain at build time;
+  // NEXT_PUBLIC_SITE_URL overrides it if needed.
+  metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL ?? process.env.URL ?? "http://localhost:3000"),
   title,
   description,
   alternates: { canonical: "/" },
