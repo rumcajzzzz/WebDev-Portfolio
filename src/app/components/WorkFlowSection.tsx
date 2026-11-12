@@ -2,7 +2,6 @@
 
 import { useEffect, useRef, useState } from 'react';
 import Lottie from 'lottie-react';
-import { ChevronDown } from 'lucide-react';
 
 // Dynamic import: static JSON imports break the RSC client manifest and bloat the main bundle.
 const loadWorkflowAnimations = () =>
@@ -36,132 +35,168 @@ const steps = [
   },
 ];
 
-const introHeight = 600;
-const stepHeight = 600;
-const lastStepHeight = 1800;
-const totalSteps = steps.length;
-const sectionHeight = introHeight + stepHeight * (totalSteps - 1) + lastStepHeight;
-const MIN_STEP_MS = 1200;
-const SEEN_KEY = 'workflowSeen';
+function WorkflowCard({
+  index,
+  title,
+  description,
+  animation,
+  cardRef,
+}: {
+  index: number;
+  title: string;
+  description: string;
+  animation?: unknown;
+  cardRef: (el: HTMLDivElement | null) => void;
+}) {
+  const wrapperRef = useRef<HTMLDivElement | null>(null);
+  const [shown, setShown] = useState(false);
+  // Zigzag: even steps have text on the left, odd on the right.
+  const textLeft = index % 2 === 0;
+
+  // Play entrance + start the Lottie once the card is mostly on screen (one-time).
+  useEffect(() => {
+    const el = wrapperRef.current;
+    if (!el) return;
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting) {
+          setShown(true);
+          observer.disconnect();
+        }
+      },
+      { threshold: 0.5 }
+    );
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, []);
+
+  const motion = 'transition-all duration-700 ease-out motion-reduce:transition-none';
+
+  return (
+    <div
+      ref={wrapperRef}
+      className="sticky top-0 h-screen flex items-center justify-center px-4 bg-[linear-gradient(to_bottom,transparent,#0a0a0a_30%)]"
+    >
+      <div
+        ref={cardRef}
+        className="w-full max-w-6xl min-h-[75vh] md:min-h-[70vh] px-6 py-10 md:px-14 md:py-12 grid md:grid-cols-2 items-center gap-6 md:gap-12 origin-top will-change-transform text-white"
+      >
+        {/* Text */}
+        <div
+          className={`${motion} ${textLeft ? 'md:order-1' : 'md:order-2'} ${
+            shown ? 'opacity-100 translate-x-0' : `opacity-0 ${textLeft ? '-translate-x-16' : 'translate-x-16'}`
+          }`}
+        >
+          {/* Number overlaps the title slightly (2px less than the original 40/48px). */}
+          <div className="text-[80px] sm:text-[100px] md:text-[140px] font-black text-yellow-700 opacity-30 leading-none select-none mb-1 sm:mb-2 translate-y-[38px] sm:translate-y-[46px] md:-translate-x-5">
+            {index + 1}
+          </div>
+          <h3 className="text-3xl md:text-5xl font-semibold">{title}</h3>
+          <p className="py-6 text-sm sm:text-base md:text-xl mt-2 sm:mt-3 text-neutral-400 max-w-lg">{description}</p>
+        </div>
+
+        {/* Lottie */}
+        <div
+          className={`flex justify-center ${textLeft ? 'md:order-2' : 'md:order-1'} ${motion} delay-200 ${
+            shown ? 'opacity-100 scale-100' : 'opacity-0 scale-90'
+          }`}
+        >
+          <div className="h-[220px] sm:h-[280px] md:h-[360px] aspect-square flex items-center justify-center">
+            {shown && animation ? (
+              <Lottie animationData={animation} loop className="h-full w-full" />
+            ) : null}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
 
 export default function WorkFlowSection() {
-  const sectionRef = useRef<HTMLDivElement | null>(null);
-  const [stepIndex, setStepIndex] = useState(-1);
-  // Step the scroll position points at; stepIndex (displayed) catches up to it.
-  const [targetIndex, setTargetIndex] = useState(-1);
-  // First pass: each step stays visible at least MIN_STEP_MS, none skipped. After that, follow scroll.
-  const [seen, setSeen] = useState(false);
-  const shownAtRef = useRef(0);
   const [workflowAnimations, setWorkflowAnimations] = useState<unknown[]>([]);
+  const cardRefs = useRef<(HTMLDivElement | null)[]>([]);
 
   useEffect(() => {
     loadWorkflowAnimations().then(setWorkflowAnimations);
-    if (sessionStorage.getItem(SEEN_KEY)) setSeen(true);
   }, []);
 
+  // Scroll-linked card motion (read-only, never touches scroll). Values are eased toward their
+  // scroll targets every frame, so stepped wheel input still looks fluid:
+  // - entering card drifts up into place and fades in,
+  // - covered card drifts up, shrinks and fades out, so it never just sits still.
   useEffect(() => {
-    const handleScroll = () => {
-      if (!sectionRef.current) return;
-      const relativeScroll = window.scrollY - sectionRef.current.offsetTop;
+    let frame = 0;
+    const EASE = 0.12;
+    const clamp01 = (v: number) => Math.min(Math.max(v, 0), 1);
+    const smooth = steps.map(() => ({ enter: 1, cover: 0 }));
 
-      if (relativeScroll < introHeight) {
-        setTargetIndex(-1);
-      } else if (relativeScroll < introHeight + stepHeight * (totalSteps - 1)) {
-        setTargetIndex(Math.floor((relativeScroll - introHeight) / stepHeight));
-      } else {
-        setTargetIndex(totalSteps - 1);
-      }
+    const tick = () => {
+      frame = 0;
+      const vh = window.innerHeight;
+      const cards = cardRefs.current;
+      let moving = false;
+
+      cards.forEach((card, i) => {
+        if (!card?.parentElement) return;
+        const enterTarget = i === 0 ? 1 : clamp01(1 - card.parentElement.getBoundingClientRect().top / vh);
+        const next = cards[i + 1]?.parentElement;
+        const coverTarget = next ? clamp01(1 - next.getBoundingClientRect().top / vh) : 0;
+
+        const s = smooth[i];
+        s.enter += (enterTarget - s.enter) * EASE;
+        s.cover += (coverTarget - s.cover) * EASE;
+        if (Math.abs(enterTarget - s.enter) > 0.001 || Math.abs(coverTarget - s.cover) > 0.001) moving = true;
+
+        const y = (1 - s.enter) * 0.12 * vh - s.cover * 0.08 * vh;
+        card.style.transform = `translate3d(0, ${y}px, 0) scale(${1 - 0.06 * s.cover})`;
+        card.style.opacity = `${(0.3 + 0.7 * s.enter) * (1 - Math.min(s.cover * 1.4, 1))}`;
+      });
+
+      if (moving) frame = requestAnimationFrame(tick);
     };
-
-    window.addEventListener('scroll', handleScroll, { passive: true });
-    handleScroll();
-    return () => window.removeEventListener('scroll', handleScroll);
+    const onScroll = () => {
+      if (!frame) frame = requestAnimationFrame(tick);
+    };
+    window.addEventListener('scroll', onScroll, { passive: true });
+    window.addEventListener('resize', onScroll);
+    onScroll();
+    return () => {
+      window.removeEventListener('scroll', onScroll);
+      window.removeEventListener('resize', onScroll);
+      cancelAnimationFrame(frame);
+    };
   }, []);
-
-  useEffect(() => {
-    shownAtRef.current = Date.now();
-    if (stepIndex === totalSteps - 1 && !seen) {
-      setSeen(true);
-      sessionStorage.setItem(SEEN_KEY, '1');
-    }
-  }, [stepIndex, seen]);
-
-  useEffect(() => {
-    if (targetIndex === stepIndex) return;
-    if (seen || targetIndex < stepIndex || stepIndex === -1) {
-      setStepIndex(seen || targetIndex < stepIndex ? targetIndex : 0);
-      return;
-    }
-    const remaining = MIN_STEP_MS - (Date.now() - shownAtRef.current);
-    const timer = setTimeout(() => setStepIndex((i) => i + 1), Math.max(0, remaining));
-    return () => clearTimeout(timer);
-  }, [targetIndex, stepIndex, seen]);
 
   return (
-    <div style={{ height: `${sectionHeight}px` }} ref={sectionRef}>
-      <div className="sticky top-0 h-screen w-full bg-black px-2 sm:px-4 md:px-6 flex flex-col justify-center items-center">
-        <h2
-          className={`text-3xl sm:text-4xl md:text-6xl font-bold mb-10 sm:mb-16 text-center text-white transition-opacity duration-700 ${
-            stepIndex === -1 ? 'opacity-100' : 'opacity-50'
-          }`}
-        >
-          Jak wygląda praca ze mną?
-        </h2>
+    <section id="workflow" className="w-full pt-24 pb-12">
+      <h2 className="text-3xl sm:text-4xl md:text-6xl font-bold mb-10 sm:mb-16 text-center text-white fade-in-on-scroll">
+        Jak wygląda praca ze mną?
+      </h2>
 
-        <div className="w-full max-w-5xl relative h-[350px] sm:h-[400px] md:h-[450px]">
-          {steps.map((step, i) => {
-            const isActive = i === stepIndex;
-            return (
-              <div
-                key={i}
-                className={`absolute inset-0 flex flex-col md:flex-row items-center md:items-start justify-center md:justify-between gap-4 sm:gap-6 md:gap-2 transition-all duration-700 text-white ${
-                  isActive
-                    ? 'opacity-100 translate-x-0 pointer-events-auto'
-                    : 'opacity-0 -translate-x-20 pointer-events-none'
-                }`}
-              >
-
-                <div className="w-full md:w-1/2 px-2 sm:px-4 md:px-8 text-center md:text-left">
-                  <div className="text-[80px] sm:text-[100px] md:text-[120px] font-black text-yellow-700 opacity-30 leading-none select-none mb-1 sm:mb-2 md:translate-y-10 md:-translate-x-5 sm:translate-y-12 sm:-translate-x-38">
-                    {i + 1}
-                  </div>
-                  <h3 className="text-3xl font-semibold">{step.title}</h3>
-                  <p className="mx-32 py-6 text-sm sm:text-md md:text-lg mt-2 sm:mt-3 md:mx-0 text-neutral-400">{step.description}</p>
-                </div>
-
-                <div className="w-full md:w-1/2 flex justify-center md:justify-end px-2 sm:px-4 md:px-8 ">
-                  <div className="bg-[#0a0a0a] rounded-lg p-2 sm:p-4 shadow-md lottie-style max-h-[180px] sm:max-h-[220px]">
-                    {workflowAnimations[i] ? (
-                      <Lottie
-                        key={isActive ? `active-${i}` : `inactive-${i}`}
-                        animationData={workflowAnimations[i]}
-                        loop={true}
-                        style={{ maxHeight: '180px', width: 'auto' }}
-                      />
-                    ) : (
-                      <div className="h-[180px] w-[180px]" />
-                    )}
-                  </div>
-                </div>
-
-              </div>
-            );
-          })}
-        </div>
-
-        {stepIndex === steps.length - 1 && (
-          <div className="absolute bottom-10 flex justify-center w-full animate-bounce">
-            <button
-              onClick={() => window.scrollBy({ top: window.innerHeight, behavior: 'smooth' })}
-              className="text-white text-3xl opacity-70 hover:opacity-100 transition-opacity"
-              aria-label="Przejdź dalej"
-            >
-              <ChevronDown size={32} />
-            </button>
-          </div>
-        )}
-
+      <div className="relative">
+        {/* Snap anchors: one per step, where that card is fully in place. Separate from the
+            sticky cards because snap positions on sticky elements are unreliable. */}
+        {steps.map((step, i) => (
+          <div
+            key={`snap-${step.title}`}
+            aria-hidden
+            className="absolute left-0 w-px h-screen snap-start snap-always pointer-events-none"
+            style={{ top: `${i * 100}vh` }}
+          />
+        ))}
+        {steps.map((step, i) => (
+          <WorkflowCard
+            key={step.title}
+            index={i}
+            title={step.title}
+            description={step.description}
+            animation={workflowAnimations[i]}
+            cardRef={(el) => {
+              cardRefs.current[i] = el;
+            }}
+          />
+        ))}
       </div>
-    </div>
+    </section>
   );
 }

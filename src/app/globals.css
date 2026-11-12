@@ -29,6 +29,8 @@
 
 html {
   scroll-behavior: smooth;
+  /* Proximity: snaps only near workflow steps, rest of the page scrolls freely. */
+  scroll-snap-type: y proximity;
   font-size: clamp(12px, 1.5vw, 18px);
   scrollbar-width: none;
 
