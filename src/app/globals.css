@@ -83,6 +83,11 @@ body {
   }
 }
 
+/* No scrolling the page underneath while the loader is up. */
+html:has(.app-loader) {
+  overflow: hidden;
+}
+
 .app-loader {
   animation: loaderOut 0.3s ease-out 1.5s forwards;
 }
