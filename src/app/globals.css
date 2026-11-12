@@ -76,6 +76,17 @@ body {
   font-weight: normal;
 }
 
+@keyframes loaderOut {
+  to {
+    opacity: 0;
+    visibility: hidden;
+  }
+}
+
+.app-loader {
+  animation: loaderOut 0.3s ease-out 1.5s forwards;
+}
+
 .lottie-style {
   max-width: 75vw;
 }

@@ -4,17 +4,14 @@ import { useEffect, useRef, useState } from 'react';
 import Lottie from 'lottie-react';
 import { ChevronDown } from 'lucide-react';
 
-import workflow1 from '@/assets/lottie/workflow1.json';
-import workflow2 from '@/assets/lottie/workflow2.json';
-import workflow3 from '@/assets/lottie/workflow3.json';
-import workflow4 from '@/assets/lottie/workflow4.json';
-
-const workflowAnimations = [
-  workflow1,
-  workflow2,
-  workflow3,
-  workflow4,
-];
+// Dynamic import: static JSON imports break the RSC client manifest and bloat the main bundle.
+const loadWorkflowAnimations = () =>
+  Promise.all([
+    import('@/assets/lottie/workflow1.json'),
+    import('@/assets/lottie/workflow2.json'),
+    import('@/assets/lottie/workflow3.json'),
+    import('@/assets/lottie/workflow4.json'),
+  ]).then((modules) => modules.map((m) => m.default));
 
 const steps = [
   {
@@ -44,6 +41,11 @@ export default function WorkFlowSection() {
   const [stepIndex, setStepIndex] = useState(-1);
   const [isScrollBlocked, setIsScrollBlocked] = useState(false);
   const [isCompleted, setIsCompleted] = useState(false);
+  const [workflowAnimations, setWorkflowAnimations] = useState<unknown[]>([]);
+
+  useEffect(() => {
+    loadWorkflowAnimations().then(setWorkflowAnimations);
+  }, []);
 
   const introHeight = 600;
   const stepHeight = 600;
@@ -139,12 +141,16 @@ export default function WorkFlowSection() {
 
                 <div className="w-full md:w-1/2 flex justify-center md:justify-end px-2 sm:px-4 md:px-8 ">
                   <div className="bg-[#0a0a0a] rounded-lg p-2 sm:p-4 shadow-md lottie-style max-h-[180px] sm:max-h-[220px]">
-                    <Lottie
-                      key={isActive ? `active-${i}` : `inactive-${i}`}
-                      animationData={workflowAnimations[i]}
-                      loop={true}
-                      style={{ maxHeight: '180px', width: 'auto' }}
-                    />
+                    {workflowAnimations[i] ? (
+                      <Lottie
+                        key={isActive ? `active-${i}` : `inactive-${i}`}
+                        animationData={workflowAnimations[i]}
+                        loop={true}
+                        style={{ maxHeight: '180px', width: 'auto' }}
+                      />
+                    ) : (
+                      <div className="h-[180px] w-[180px]" />
+                    )}
                   </div>
                 </div>
 

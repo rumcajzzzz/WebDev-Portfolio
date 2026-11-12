@@ -58,7 +58,7 @@ export default function Hero() {
   const [isVisible, setIsVisible] = useState(false);
 
   useEffect(() => {
-    const timer = setTimeout(() => setIsVisible(true), 1000);
+    const timer = setTimeout(() => setIsVisible(true), 1600);
     return () => clearTimeout(timer);
   }, []);
 

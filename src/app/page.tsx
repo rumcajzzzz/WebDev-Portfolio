@@ -1,6 +1,3 @@
-"use client"
-
-import { useState, useEffect } from "react"
 import { supabase } from "@/lib/supabaseClient"
 import { Project } from "@/lib/types"
 
@@ -10,21 +7,16 @@ import WorkflowSection from "./components/WorkFlowSection"
 import ProjectsSection from "./components/ProjectsSection"
 import ContactSection from "./components/ContactSection"
 
-export default function Home() {
-  const [projects, setProjects] = useState<Project[]>([])
+export const revalidate = 3600
 
-  useEffect(() => {
-    async function fetchProjects() {
-      const { data } = await supabase
-        .from<'projects', Project>('projects')
-        .select('*')
-        .order('sort_order', { ascending: true })
+export default async function Home() {
+  const { data, error } = await supabase
+    .from<'projects', Project>('projects')
+    .select('*')
+    .order('sort_order', { ascending: true })
 
-      setProjects(data ?? [])
-    }
-
-    fetchProjects()
-  }, [])
+  if (error) console.error('Supabase projects fetch failed:', error.message)
+  const projects: Project[] = data ?? []
 
   return (
     <main>
