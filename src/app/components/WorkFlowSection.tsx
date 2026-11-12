@@ -138,7 +138,7 @@ export default function WorkFlowSection() {
 
       cards.forEach((card, i) => {
         if (!card?.parentElement) return;
-        const enterTarget = i === 0 ? 1 : clamp01(1 - card.parentElement.getBoundingClientRect().top / vh);
+        const enterTarget = clamp01(1 - card.parentElement.getBoundingClientRect().top / vh);
         const next = cards[i + 1]?.parentElement;
         const coverTarget = next ? clamp01(1 - next.getBoundingClientRect().top / vh) : 0;
 
