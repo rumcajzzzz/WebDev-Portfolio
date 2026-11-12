@@ -49,13 +49,14 @@ export default function ProjectsSection({ projects }: ProjectsSectionProps) {
             rel="noopener noreferrer"
             className="group border border-neutral-700 rounded-lg overflow-hidden hover:shadow-lg hover:-translate-y-1 transition-transform duration-300 fade-in-on-scroll"
           >
-            <div className="h-48 w-full relative ">
+            <div className="aspect-video w-full relative overflow-hidden bg-neutral-900">
+              {/* Touch devices have no hover: show the image fully. Mouse: dimmed until hover. */}
               <Image
                 src={image_url}
                 alt={title}
                 fill
-                sizes="(max-width: 768px) 100vw, (max-width: 1024px) 50vw, 33vw"
-                className="object-cover opacity-30 group-hover:scale-105 group-hover:opacity-80 duration-300 transition-all"
+                sizes="(max-width: 768px) 75vw, (max-width: 1024px) 50vw, 33vw"
+                className="object-cover object-top opacity-100 pointer-fine:opacity-60 pointer-fine:group-hover:opacity-100 group-hover:scale-105 duration-500 transition-all"
                 priority={false}
               />
             </div>
