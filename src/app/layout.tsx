@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import AppLoader from "@/components/AppLoader";
 import "./globals.css";
 
-const title = "Marcel – Strony internetowe dla firm";
+const title = "rumcajzdev.pl";
 const description =
   "Tworzę nowoczesne, szybkie i responsywne strony internetowe dla firm i osób prywatnych. Projekt UX/UI, optymalizacja i pomoc przy publikacji.";
 
