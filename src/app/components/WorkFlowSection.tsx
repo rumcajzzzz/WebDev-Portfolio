@@ -36,76 +36,66 @@ const steps = [
   },
 ];
 
+const introHeight = 600;
+const stepHeight = 600;
+const lastStepHeight = 1800;
+const totalSteps = steps.length;
+const sectionHeight = introHeight + stepHeight * (totalSteps - 1) + lastStepHeight;
+const MIN_STEP_MS = 1200;
+const SEEN_KEY = 'workflowSeen';
+
 export default function WorkFlowSection() {
   const sectionRef = useRef<HTMLDivElement | null>(null);
   const [stepIndex, setStepIndex] = useState(-1);
-  const [isScrollBlocked, setIsScrollBlocked] = useState(false);
-  const [isCompleted, setIsCompleted] = useState(false);
+  // Step the scroll position points at; stepIndex (displayed) catches up to it.
+  const [targetIndex, setTargetIndex] = useState(-1);
+  // First pass: each step stays visible at least MIN_STEP_MS, none skipped. After that, follow scroll.
+  const [seen, setSeen] = useState(false);
+  const shownAtRef = useRef(0);
   const [workflowAnimations, setWorkflowAnimations] = useState<unknown[]>([]);
 
   useEffect(() => {
     loadWorkflowAnimations().then(setWorkflowAnimations);
+    if (sessionStorage.getItem(SEEN_KEY)) setSeen(true);
   }, []);
-
-  const introHeight = 600;
-  const stepHeight = 600;
-  const lastStepHeight = 1800;
-  const totalSteps = steps.length;
-  const sectionHeight = introHeight + stepHeight * (totalSteps - 1) + lastStepHeight;
-  const canChangeStepRef = useRef(true);
 
   useEffect(() => {
     const handleScroll = () => {
       if (!sectionRef.current) return;
+      const relativeScroll = window.scrollY - sectionRef.current.offsetTop;
 
-      const sectionTop = sectionRef.current.offsetTop;
-      const scrollY = window.scrollY;
-      const relativeScroll = scrollY - sectionTop;
-
-      if (relativeScroll >= 0 && relativeScroll < sectionHeight) {
-        let newIndex = -1;
-
-        if (relativeScroll < introHeight) {
-          newIndex = -1;
-        } else if (relativeScroll < introHeight + stepHeight * (totalSteps - 1)) {
-          newIndex = Math.floor((relativeScroll - introHeight) / stepHeight);
-        } else {
-          newIndex = totalSteps - 1;
-        }
-
-        if (newIndex !== stepIndex && canChangeStepRef.current) {
-          canChangeStepRef.current = false;
-          setStepIndex(newIndex);
-          if (newIndex === totalSteps - 1) {
-            setIsCompleted(true);
-          }
-          if (!isCompleted) {
-            setIsScrollBlocked(true);
-            setTimeout(() => {
-              setIsScrollBlocked(false);
-              canChangeStepRef.current = true;
-            }, 1200);
-          } else {
-            canChangeStepRef.current = true;
-          }
-        }
-      } else if (relativeScroll < 0 && stepIndex !== -1) {
-        setStepIndex(-1);
+      if (relativeScroll < introHeight) {
+        setTargetIndex(-1);
+      } else if (relativeScroll < introHeight + stepHeight * (totalSteps - 1)) {
+        setTargetIndex(Math.floor((relativeScroll - introHeight) / stepHeight));
+      } else {
+        setTargetIndex(totalSteps - 1);
       }
     };
 
-    window.addEventListener('scroll', handleScroll);
+    window.addEventListener('scroll', handleScroll, { passive: true });
     handleScroll();
-
-    return () => {
-      window.removeEventListener('scroll', handleScroll);
-      document.body.style.overflow = '';
-    };
-  }, [stepIndex, isCompleted]);
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
 
   useEffect(() => {
-    document.body.style.overflow = isScrollBlocked && !isCompleted ? 'hidden' : '';
-  }, [isScrollBlocked, isCompleted]);
+    shownAtRef.current = Date.now();
+    if (stepIndex === totalSteps - 1 && !seen) {
+      setSeen(true);
+      sessionStorage.setItem(SEEN_KEY, '1');
+    }
+  }, [stepIndex, seen]);
+
+  useEffect(() => {
+    if (targetIndex === stepIndex) return;
+    if (seen || targetIndex < stepIndex || stepIndex === -1) {
+      setStepIndex(seen || targetIndex < stepIndex ? targetIndex : 0);
+      return;
+    }
+    const remaining = MIN_STEP_MS - (Date.now() - shownAtRef.current);
+    const timer = setTimeout(() => setStepIndex((i) => i + 1), Math.max(0, remaining));
+    return () => clearTimeout(timer);
+  }, [targetIndex, stepIndex, seen]);
 
   return (
     <div style={{ height: `${sectionHeight}px` }} ref={sectionRef}>
