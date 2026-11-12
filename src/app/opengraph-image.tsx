@@ -1,11 +1,18 @@
+import { readFile } from "node:fs/promises";
+import { join } from "node:path";
 import { ImageResponse } from "next/og";
 
-// Link preview image (Messenger, LinkedIn, Slack...). Text kept ASCII: the default OG font lacks Polish glyphs.
-export const alt = "Marcel – Strony internetowe dla firm";
+// Link preview image (Messenger, LinkedIn, WhatsApp...): white logo on black.
+export const alt = "rumcajzdev.pl";
 export const size = { width: 1200, height: 630 };
 export const contentType = "image/png";
 
-export default function OpengraphImage() {
+export default async function OpengraphImage() {
+  const svg = await readFile(join(process.cwd(), "public/rumcajzlogo.svg"), "utf8");
+  // Logo is dark (the loader inverts it via CSS); recolor every fill to white here.
+  const whiteSvg = svg.replace(/fill="#[0-9a-fA-F]{6}"/g, 'fill="#ffffff"');
+  const src = `data:image/svg+xml;base64,${Buffer.from(whiteSvg).toString("base64")}`;
+
   return new ImageResponse(
     (
       <div
@@ -13,21 +20,13 @@ export default function OpengraphImage() {
           width: "100%",
           height: "100%",
           display: "flex",
-          flexDirection: "column",
+          alignItems: "center",
           justifyContent: "center",
-          padding: "0 96px",
-          background: "#0a0a0a",
-          color: "#ffffff",
+          background: "#000000",
         }}
       >
-        <div style={{ fontSize: 40, color: "#a3a3a3" }}>Marcel</div>
-        <div style={{ fontSize: 88, fontWeight: 700, lineHeight: 1.1, marginTop: 16 }}>
-          Strony internetowe dla firm
-        </div>
-        <div style={{ fontSize: 36, color: "#a3a3a3", marginTop: 32 }}>
-          Nowoczesne. Szybkie. Responsywne.
-        </div>
-        <div style={{ width: 120, height: 6, background: "#a16207", marginTop: 48, borderRadius: 3 }} />
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img src={src} width={780} height={520} alt="" />
       </div>
     ),
     size
