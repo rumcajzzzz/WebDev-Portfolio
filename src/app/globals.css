@@ -91,7 +91,7 @@ html:has(.app-loader) {
 }
 
 .app-loader {
-  animation: loaderOut 0.3s ease-out 1.5s forwards;
+  animation: loaderOut 0.3s ease-out 0.4s forwards;
 }
 
 .lottie-style {

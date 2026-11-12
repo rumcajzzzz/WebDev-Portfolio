@@ -8,7 +8,7 @@ export default function AppLoader({ children }: { children: React.ReactNode }) {
 	const [visible, setVisible] = useState(true);
 
 	useEffect(() => {
-		const removeTimer = setTimeout(() => setVisible(false), 1800);
+		const removeTimer = setTimeout(() => setVisible(false), 800);
 		return () => clearTimeout(removeTimer);
 	}, []);
 
